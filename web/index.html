@@ -904,7 +904,8 @@ a.btn{text-decoration:none}
 .hist-ppl{max-height:260px;overflow:auto;font-size:12.5px;margin-top:6px}
 .hist-ppl div{display:flex;flex-direction:column;padding:4px 0;border-top:1px solid var(--line,#e3e6ea)}
 .hist-ppl small{color:var(--fg-2)}
-.cad-by{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg-2);margin:-2px 0 10px}
+.cad-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:-2px 0 10px}.cad-ctry{display:inline-flex;flex-wrap:wrap;gap:6px;font-size:13px;font-weight:600;color:var(--ink)}.cad-ctry>span{display:inline-flex;align-items:center;gap:5px;background:var(--bg-2,#f6f7f9);border:1px solid var(--border);border-radius:999px;padding:2px 9px 2px 7px}.cad-ctry .flag{font-size:14px;line-height:1}.cad-ctry .flag-img{width:18px;height:13px;border-radius:2px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.08)}.cad-at{color:var(--fg-2);font-weight:400;white-space:nowrap}
+.cad-by{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg-2);margin:0}
 .cad-by svg{width:14px;height:14px;flex:none;opacity:.75}
 .cad-by b{color:var(--ink);font-weight:600}
 .share-res .res-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -2531,10 +2532,11 @@ function ListView({cads, loaded, env, dbErr, onOpen, onDelete, onSave, onGo, req
   const zUsers = useUsers(env);
   const reqBy = useMemo(()=>{ const m = {}; (reqs||[]).forEach(r=>{ if (r.cadId && r.by && !m[r.cadId]) m[r.cadId] = r.by; }); return m; }, [reqs]);
   const byOf = c => c.createdBy || reqBy[c.id] || null;
+  const reqAt = useMemo(()=>{ const m = {}; (reqs||[]).forEach(r=>{ if (r.cadId && r.at && (!m[r.cadId] || r.at < m[r.cadId])) m[r.cadId] = r.at; }); return m; }, [reqs]);
   const appNames = useNames(cads.map(byOf));
   const whoOf = c => { const k = byOf(c); if (!k) return null; const kl = String(k).toLowerCase();
     const name = appNames[k] || appNames[kl] || USER_BY[kl] || USER_BY[kl.replace("@geo-victoria.com","@geovictoria.com")] || prettyMail(k);
-    return name ? {name, email: String(k).includes("@") ? k : ""} : null; };
+    return name ? {name, email: String(k).includes("@") ? k : "", at: reqAt[c.id] || c.createdAt || null} : null; };
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -2811,7 +2813,7 @@ function GroupCard({g, liveMap, who, onOpen}){
       <span className=${"badge st-"+(anyReal ? "real" : first.status)}>${anyReal ? html`<span className="live-dot"></span>Enviando` : first.status==="activa" ? "Activa" : "Borrador"}</span>
     </div>
     ${first.description && html`<p className="desc" data-notr>${first.description}</p>`}
-    ${who && html`<div className="cad-by" title=${who.email||""}><${I} n="users"/><span>Solicitada por <b data-notr>${who.name}</b></span></div>`}
+    <${CadMeta} c=${first} who=${who}/>
     ${L && html`<${CadLive} L=${L}/>`}
     <div className="tags"><span className="tag mod">${modOf(first).label}</span><span className=${"tag ch "+first.settings.channel}>${first.settings.channel==="hubspot"?"HubSpot":"Zoho"}</span>${L && html`<span className="tag">${L.people.toLocaleString("es")} personas en total</span>`}</div>
     <button className="btn sm" style=${{marginTop:10}} onClick=${e=>{ e.stopPropagation(); setRes(true); }}><${I} n="chart"/>Ver resultados de todos los lotes</button>
@@ -2823,6 +2825,30 @@ function GroupCard({g, liveMap, who, onOpen}){
     </div>
   </article>`;
 }
+/* País de la cadencia (filtro «País» de Zoho o mercado elegido) con su bandera */
+const ISO2 = {"Alemania":"DE","Argentina":"AR","Bolivia":"BO","Brasil":"BR","Chile":"CL","Colombia":"CO","Costa Rica":"CR","Ecuador":"EC","El Salvador":"SV","España":"ES","Estados Unidos":"US","Guatemala":"GT","Honduras":"HN","México":"MX","Nicaragua":"NI","Panamá":"PA","Paraguay":"PY","Perú":"PE","Puerto Rico":"PR","República Dominicana":"DO","Uruguay":"UY","Venezuela":"VE"};
+const flagOf = n => { const c = ISO2[n]; return c ? String.fromCodePoint(...[...c].map(x => 0x1F1A5 + x.charCodeAt(0))) : "🌎"; };
+function cadCountries(c){
+  const v = [...new Set((c.criteria && c.criteria.conditions || []).filter(x => x.field==="Territorio" && (x.op==="in" || x.op==="equals")).flatMap(x => [].concat(x.value||[])).filter(Boolean))];
+  if (v.length) return v;
+  const m = MARKETS.find(x => x.k === (c.settings && c.settings.country));
+  return m && m.k !== "OT" ? [m.l] : [];
+}
+const fmtDay = d => { if (!d) return ""; const t = new Date(d); if (isNaN(t)) return ""; return t.toLocaleDateString("es-MX", {day:"numeric", month:"short", year: t.getFullYear()===new Date().getFullYear() ? undefined : "numeric"}); };
+/* Bandera como imagen (Windows no dibuja las banderas emoji); si la imagen no carga, se usa el emoji */
+function Flag({n}){
+  const [bad, setBad] = useState(false); const c = ISO2[n];
+  if (!c || bad) return html`<span className="flag" aria-hidden="true">${flagOf(n)}</span>`;
+  return html`<img className="flag-img" src=${"https://flagcdn.com/w40/"+c.toLowerCase()+".png"} alt="" width="18" height="13" onError=${()=>setBad(true)}/>`;
+}
+function CadMeta({c, who}){
+  const cs = cadCountries(c);
+  if (!cs.length && !who) return null;
+  return html`<div className="cad-meta">
+    ${cs.length > 0 && html`<span className="cad-ctry" title=${"País: " + cs.join(", ")}>${cs.slice(0,3).map(n=>html`<span key=${n}><${Flag} n=${n}/>${n}</span>`)}${cs.length>3 && html`<span>+${cs.length-3}</span>`}</span>`}
+    ${who && html`<span className="cad-by" title=${who.email||""}><${I} n="users"/><span>Solicitada por <b data-notr>${who.name}</b>${who.at && html`<span className="cad-at"> · ${fmtDay(who.at)}</span>`}</span></span>`}
+  </div>`;
+}
 function prettyMail(e){ const l = String(e||"").split("@")[0]; if (!l || /^[0-9a-f-]{20,}$/i.test(l)) return ""; return l.replace(/[._-]+/g," ").replace(/\b\w/g, x=>x.toUpperCase()); }
 function CadCard({c, onOpen, onDup, onDel, onAdd, reqs, live, who}){
   const last = c.steps.length ? c.steps[c.steps.length-1].day : 0;
@@ -2830,13 +2856,13 @@ function CadCard({c, onOpen, onDup, onDel, onAdd, reqs, live, who}){
   return html`<article className="card cad" onClick=${onOpen} tabIndex="0" onKeyDown=${e=>{if(e.key==="Enter")onOpen();}}>
     <div className="row" style=${{alignItems:"flex-start"}}>
       <div className="grow"><h3 data-notr>${c.name}</h3>${c.demo && html`<span className="demo-badge" title="Cadencia de ejemplo: ábrela para ver cómo está armada y duplícala para usarla">★ Ejemplo · duplícala para usarla</span>`}</div>
-      ${(reqs||[]).some(r=>r.id===c.id && r.status==="pending") ? html`<span className="badge st-wait">Esperando aprobación</span>` : html`<span className=${"badge st-"+(c.real && c.real.status==="active" ? "real" : c.status)}>${c.real && c.real.status==="active" ? html`<span className="live-dot"></span>Enviando` : c.real ? "Envío pausado" : c.status==="borrador"?"Borrador":c.status==="activa"?"Simulación":"Pausada"}</span>`}
+      ${(reqs||[]).some(r=>r.id===c.id && r.status==="pending") ? html`<span className="badge st-wait">Esperando aprobación</span>` : html`<span className=${"badge st-"+(c.real && c.real.status==="active" && !(live && live.status && live.status!=="active") ? "real" : c.status)}>${c.real && c.real.status==="active" && live && live.status && live.status!=="active" ? "Pausada" : c.real && c.real.status==="active" ? html`<span className="live-dot"></span>Enviando` : c.real ? "Envío pausado" : c.status==="borrador"?"Borrador":c.status==="activa"?"Simulación":"Pausada"}</span>`}
     </div>
     ${c.description && html`<p className="desc" data-notr>${c.description}</p>`}
-    ${!c.demo && who && html`<div className="cad-by" title=${who.email||""}><${I} n="users"/><span>Solicitada por <b data-notr>${who.name}</b></span></div>`}
+    ${!c.demo && html`<${CadMeta} c=${c} who=${who}/>`}
     ${live && html`<${CadLive} L=${live}/>`}
-    <div className="tags"><span className="tag mod">${modOf(c).label}</span><span className=${"tag ch "+c.settings.channel}>${c.settings.channel==="hubspot"?"HubSpot":"Zoho"}</span>${c.settings.enrollMode==="once" && html`<span className="tag">Lista fija</span>`}${c.criteria.conditions.slice(0,3).map((x,i)=>{const t=condText(x,modOf(c)); return html`<span key=${i} className="tag" title=${t.lab+" "+t.op+" "+t.v}>${t.lab} ${t.op} <b>${t.v}</b></span>`;})}
-      ${c.criteria.conditions.length>3 && html`<span className="tag">+${c.criteria.conditions.length-3}</span>`}</div>
+    <div className="tags"><span className="tag mod">${modOf(c).label}</span><span className=${"tag ch "+c.settings.channel}>${c.settings.channel==="hubspot"?"HubSpot":"Zoho"}</span>${c.settings.enrollMode==="once" && html`<span className="tag">Lista fija</span>`}${c.criteria.conditions.filter(x=>x.field!=="Territorio").slice(0,3).map((x,i)=>{const t=condText(x,modOf(c)); return html`<span key=${i} className="tag" title=${t.lab+" "+t.op+" "+t.v}>${t.lab} ${t.op} <b>${t.v}</b></span>`;})}
+      ${c.criteria.conditions.filter(x=>x.field!=="Territorio").length>3 && html`<span className="tag">+${c.criteria.conditions.filter(x=>x.field!=="Territorio").length-3}</span>`}</div>
     <div>
       <div className="mini"><div className="line"></div>
         <span className="dot d0" style=${{left:"8px"}} title="Día 0"></span>
