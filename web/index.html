@@ -877,6 +877,7 @@ a.btn{text-decoration:none}
 .meet-ok{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--ok-fg)}.meet-ok svg{width:16px;height:16px;flex:none}.meet-miss{display:grid;gap:10px;margin-top:10px}.meet-row{display:grid;grid-template-columns:minmax(0,200px) 1fr;gap:6px 12px;align-items:center}.meet-who{display:flex;flex-direction:column;min-width:0}.meet-who small{color:var(--fg-2);font-size:12px;overflow:hidden;text-overflow:ellipsis}.meet-in{display:flex;gap:8px;min-width:0}.meet-in .in{flex:1;min-width:0}.meet-err{grid-column:1/-1;color:var(--bad-fg);font-size:12.5px}@media (max-width:600px){.meet-row{grid-template-columns:1fr}}
 .pf-q{font-size:13.5px;font-weight:700;margin:4px 0 8px}.pf-q small{font-weight:400;display:block;margin-top:2px}.terr-pick{margin-bottom:14px}.terr-pick .dept-opt{padding:6px 12px;font-size:13px}
 .ctrl-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}.ctrl-sp{flex:1}.ctrl-dates{display:inline-flex;gap:8px;align-items:center}.ctrl-dates .in{width:auto;padding:6px 10px}.res-kpis.ctrl-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.ctrl-ch .sel{width:auto;min-width:150px}.ctrl-card{margin-bottom:16px}.ctrl-ch{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:14px}.ctrl-leg{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--fg-2)}.ctrl-leg i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-left:6px}.ctrl-leg i.hs,.ctrl-b.hs{background:var(--blue);fill:var(--blue)}.ctrl-leg i.zo,.ctrl-b.zo{background:#e8613c;fill:#e8613c}.ctrl-b{fill:var(--blue)}.ctrl-b.m-opened{fill:var(--yellow)}.ctrl-b.m-clicked{fill:#7c5cff}.ctrl-b.m-replied{fill:var(--ok-fg)}.ctrl-b.m-bounced,.ctrl-b.m-unsub,.ctrl-b.m-failed{fill:var(--bad-fg)}.ctrl-chart svg{width:100%;height:auto;display:block}.ctrl-grid{stroke:var(--border);stroke-width:1}.ctrl-ax{font-size:11px;fill:var(--fg-3,#8a94a0);font-family:inherit}.ctrl-hl{fill:currentColor;opacity:.06;pointer-events:none}.ctrl-tip{font-size:12.5px;min-height:20px;margin-top:6px}.ctrl-tabs{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.ctrl-q{max-width:220px;padding:6px 10px}.ctrl-tbl-wrap{overflow-x:auto;padding:0}.ctrl-tbl{width:100%;border-collapse:collapse;font-size:13px}.ctrl-tbl th{text-align:left;font-weight:600;color:var(--fg-2);font-size:12px;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}.ctrl-tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}.ctrl-tbl td b{display:block;font-weight:600}.ctrl-tbl td small{color:var(--fg-2);font-size:11.5px}.ctrl-tbl .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.ctrl-tbl tbody tr:last-child td{border-bottom:0}@media (max-width:900px){.res-kpis.ctrl-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.aud{border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin:12px 0;background:var(--surface)}.aud-h{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-2);margin-bottom:6px}.aud-who{font-size:15px;line-height:1.5}.aud-ctry{display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle}.aud-ctry>span,.aud-pill{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:999px;padding:2px 9px;font-size:13px;font-weight:600;background:var(--bg-2,#f6f7f9)}.aud-pill.bad{border-color:var(--bad-fg);color:var(--bad-fg)}.aud-any{color:var(--bad-fg);font-weight:700}.aud-f{margin:8px 0 0;padding-left:18px;font-size:13.5px;line-height:1.6}.aud-br{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:12.5px}.aud .flag-img{width:16px;height:12px;border-radius:2px;object-fit:cover}.aud-ok{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;font-weight:600;margin:4px 0 10px;cursor:pointer}.aud-ok input{margin-top:3px;width:16px;height:16px}
 .reqmark{color:var(--bad-fg,#b42318);font-weight:600;font-size:12px;margin-left:2px}
 .excl-h{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--fg-2);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.03em}
 .cs-rows{display:flex;flex-direction:column;margin-top:10px}
@@ -1613,7 +1614,8 @@ function normalizeCadence(c){
     real: c.real && typeof c.real==="object" ? {status:c.real.status==="active"?"active":"paused", id:String(c.real.id||""), at:c.real.at||null} : null,
     source: c.source==="list" ? "list" : "zoho",
     list: c.list && Array.isArray(c.list.rows) ? {file:String(c.list.file||"archivo"), at:c.list.at||null, columns:Array.isArray(c.list.columns)?c.list.columns.map(String):[], map:{email:"",name:"",company:"",ownerName:"",ownerEmail:"",meeting:"", ...(c.list.map||{})}, rows:c.list.rows.slice(0, LIST_MAX)} : null,
-    shareToken: typeof c.shareToken==="string" && /^[A-Za-z0-9_-]{16,64}$/.test(c.shareToken) ? c.shareToken : null};
+    shareToken: typeof c.shareToken==="string" && /^[A-Za-z0-9_-]{16,64}$/.test(c.shareToken) ? c.shareToken : null,
+    reviewedKey: typeof c.reviewedKey==="string" ? c.reviewedKey : null};
   out.criteria = {conditions: ((c.criteria&&c.criteria.conditions)||[]).filter(x=>x && fdef(mod,x) && OPS[fdef(mod,x).type]).map(x=>{
     const f = fdef(mod,x); const ops = OPS[f.type].map(o=>o[0]);
     const xo = x.byTrigger ? x.op : pickOp(f, x.op);
@@ -2835,6 +2837,26 @@ function cadCountries(c){
   return m && m.k !== "OT" ? [m.l] : [];
 }
 const fmtDay = d => { if (!d) return ""; const t = new Date(d); if (isNaN(t)) return ""; return t.toLocaleDateString("es-MX", {day:"numeric", month:"short", year: t.getFullYear()===new Date().getFullYear() ? undefined : "numeric"}); };
+/* «Esto se enviará a…»: revisión de a quién le llega una cadencia (filtros en palabras + países reales) */
+const reviewKey = c => JSON.stringify({m:c.module, s:c.source||"zoho", c:(c.criteria&&c.criteria.conditions||[]).map(x=>[x.field,x.op,x.value])});
+function terrBreakdown(rows){ const m = {}; (rows||[]).forEach(d=>{ const t = d.terr || "Sin país"; m[t] = (m[t]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
+function AudienceReview({cad, rows, n}){
+  const mod = modOf(cad); const list = isList(cad);
+  const conds = (cad.criteria && cad.criteria.conditions) || [];
+  const filtC = cadCountries(cad);
+  const hasTerr = conds.some(x=>x.field==="Territorio");
+  const br = rows ? terrBreakdown(rows) : null;
+  const multi = br && br.filter(([t])=>t!=="Sin país").length > 1;
+  const outside = br && hasTerr ? br.filter(([t])=>t!=="Sin país" && !filtC.some(f=>terrNorm(f)===terrNorm(t))) : [];
+  return html`<div className="aud">
+    <div className="aud-h">Esto se enviará a</div>
+    <div className="aud-who"><b>${n!=null ? n.toLocaleString("es")+" " : ""}${list ? "personas de la lista de Excel" : mod.many}</b>${!list && (filtC.length ? html` de <span className="aud-ctry">${filtC.map(t=>html`<span key=${t}><${Flag} n=${t}/>${t}</span>`)}</span>` : html` <span className="aud-any">de cualquier país</span>`)}</div>
+    ${!list && html`<ul className="aud-f">${conds.length ? conds.map((x,i)=>{ const t = condText(x, mod); return html`<li key=${i}>${t.lab} ${t.op} <b>${t.v}</b></li>`; }) : html`<li className="muted">Sin filtros: todos los ${mod.many} de Zoho.</li>`}</ul>`}
+    ${br && br.length > 0 && html`<div className="aud-br"><span className="muted">Países de quienes cumplen hoy los filtros:</span>${br.slice(0,8).map(([t,k])=>html`<span key=${t} className=${"aud-pill"+(outside.some(o=>o[0]===t) ? " bad" : "")}>${t!=="Sin país" && html`<${Flag} n=${t}/>`}${t} <b>${k.toLocaleString("es")}</b></span>`)}${br.length>8 && html`<span className="aud-pill">+${br.length-8} más</span>`}</div>`}
+    ${!list && !hasTerr && html`<div className="alert bad" style=${{marginTop:10}}><${I} n="alert"/><div><b>Sin filtro de país.</b> ${multi ? `Hoy le llegaría a ${br.filter(([t])=>t!=="Sin país").length} países distintos.` : "Puede llegar a contactos de cualquier país."} Si el correo habla de un país (una ley, una reforma, precios), agrega el filtro «País».</div></div>`}
+    ${outside.length > 0 && html`<div className="alert bad" style=${{marginTop:10}}><${I} n="alert"/><div>Hay registros de <b>${outside.map(o=>o[0]).join(", ")}</b>, fuera del país del filtro. Revisa los filtros.</div></div>`}
+  </div>`;
+}
 /* Bandera como imagen (Windows no dibuja las banderas emoji); si la imagen no carga, se usa el emoji */
 function Flag({n}){
   const [bad, setBad] = useState(false); const c = ISO2[n];
@@ -2976,10 +2998,10 @@ function Wizard({initial, isNew, startAt, env, onBack, onSave: onSaveRaw, onActi
     const stField = st ? (STAGE_DATE[mod.key]||{})[st] : null;
     const aField = once ? null : st ? stField : (cad.anchor===ENROLLED ? null : cad.anchor);
     const extraF = cad.criteria.conditions.map(c=>c.field).filter(f=>f!=="Tag");
-    const fields = [...new Set(mod.select.concat(aField?[aField]:[], extraF))].join(",");
+    const fields = [...new Set(mod.select.concat(aField?[aField]:[], extraF, ["Territorio"]))].join(",");
     const {rows, truncated} = await zohoSearch(mod.key, crit, fields);
     const today = new Date().toISOString();
-    const out = rows.map(r=>({...mod.map(r), anchor: aField ? r[aField] : (st && mod.key==="Deals" ? null : today), anchorSrc: aField ? "campo" : (st && mod.key==="Deals" ? "historial" : "detectado")}));
+    const out = rows.map(r=>({...mod.map(r), terr: r.Territorio || "", anchor: aField ? r[aField] : (st && mod.key==="Deals" ? null : today), anchorSrc: aField ? "campo" : (st && mod.key==="Deals" ? "historial" : "detectado")}));
     if (st && !stField && mod.key==="Deals"){
       const LIM = 150; let done = 0; const todo = out.slice(0, LIM);
       setLive(l=>({...l, progress:`Leyendo el historial de etapas (0 de ${todo.length})`}));
@@ -3040,7 +3062,7 @@ function Wizard({initial, isNew, startAt, env, onBack, onSave: onSaveRaw, onActi
         else if (cad.settings.sender==="user" || cad.settings.sender==="custom") missing = cad.settings.sender==="user" && cad.settings.senderEmail && !conns.includes(cad.settings.senderEmail.toLowerCase()) ? [cad.settings.senderName||cad.settings.senderEmail] : [];
       }
     }
-    setRealChk({n:reach.length, missing, err: rows ? null : "No pude consultar Zoho.", requestMode:!canEngine});
+    setRealChk({n:reach.length, rows: reach.map(x=>x.d), missing, err: rows ? null : "No pude consultar Zoho.", requestMode:!canEngine});
   };
   const goReal = async ()=>{
     if (!(cad.real && cad.real.id) && nameProblem(cad)) { pushToast(nameProblem(cad)); return; }
@@ -3107,8 +3129,11 @@ function Wizard({initial, isNew, startAt, env, onBack, onSave: onSaveRaw, onActi
     return o;
   },[sample, mod, cad.settings.showMeeting, cad.settings.sender, cad.settings.senderName, cad.settings.senderEmail, cad.settings.channel, cad.settings.hsSender, cad.settings.hsFromName, cad.settings.hsFromEmail]);
 
-  const save = async (leave)=>{
-    setSaving(true); const ok = await onSave(cad); setSaving(false);
+  const [review, setReview] = useState(null); // {leave}
+  const save = async (leave, reviewed)=>{
+    if (!reviewed && !isList(cad) && !cad.demo && cad.reviewedKey !== reviewKey(cad)) { setAskLeave(false); setReview({leave}); return; }
+    setSaving(true); const toSave = reviewed ? {...cad, reviewedKey: reviewKey(cad)} : cad; if (reviewed) setCad(toSave);
+    const ok = await onSave(toSave); setSaving(false);
     if (ok){ setDirty(false); pushToast("Cadencia guardada"); if (leave) onBack(); }
   };
   const isLast = wi===steps.length-1;
@@ -3179,6 +3204,8 @@ function Wizard({initial, isNew, startAt, env, onBack, onSave: onSaveRaw, onActi
       ${!(cad.real && cad.real.id) && html`<div className="name-confirm"><span>Confirma el nombre de la cadencia</span><b data-notr>${cad.name}</b><small>Así se guardará en Zoho, en «Cadencia Plataforma» de cada persona, junto a su código. No se podrá cambiar ni volver a usar en otra cadencia.</small></div>`}
       ${terrProb && html`<div className="alert bad"><${I} n="alert"/><div><b>Fuera de territorio.</b> ${terrProb.msg} ${terrProb.kind!=="noprofile" && html`<button className="linkbtn inline" onClick=${()=>{ setCad(c=>{ const n = clone(c); fixTerritory(n, terrProb.mine); return normalizeCadence(n); }); setDirty(true); setAct(null); setW(0); }}>Corregir el filtro en el paso 1</button>`}</div></div>`}
       ${!(cad.real && cad.real.id) && nameProblem(cad) && html`<div className="alert bad"><${I} n="alert"/><div>${nameProblem(cad)} Cámbialo en «Nombre de la cadencia», arriba en esta misma página.</div></div>`}
+      <${AudienceReview} cad=${cad} rows=${isList(cad) ? null : realChk.rows} n=${realChk.n}/>
+      <label className="aud-ok"><input type="checkbox" checked=${!!realChk.audOk} onChange=${e=>{ const v = e.target.checked; setRealChk(r=>({...r, audOk:v})); }}/><span>Revisé los filtros y los países: es a quien le quiero escribir.</span></label>
       <div className="real-sum">
         <div><span>Hoy entrarían</span><b>${realChk.n} ${plural(realChk.n,"persona","personas")}</b></div>
         <div><span>Correos si nadie responde</span><b>${realChk.n*cad.steps.length}</b></div>
@@ -3197,8 +3224,8 @@ function Wizard({initial, isNew, startAt, env, onBack, onSave: onSaveRaw, onActi
       <div className="row" style=${{justifyContent:"flex-end",marginTop:20}}>
         <button className="btn ghost" onClick=${()=>setAct(null)}>Cancelar</button>
         ${realChk && realChk.requestMode
-          ? html`<button className="btn primary" disabled=${realChk.loading || !!terrProb || (!(cad.real && cad.real.id) && !!nameProblem(cad))} onClick=${()=>sendRequest(cad.real && cad.real.status==="active" ? "update" : "activate", typed)}><${I} n="send"/>Enviar solicitud</button>`
-          : html`<button className="btn primary" disabled=${!realChk || realChk.loading || realChk.blocked || !!terrProb || typed.trim().toUpperCase()!=="ACTIVAR" || (!(cad.real && cad.real.id) && !!nameProblem(cad))} onClick=${goReal}><${I} n="send"/>Enviar de verdad</button>`}
+          ? html`<button className="btn primary" disabled=${realChk.loading || !realChk.audOk || !!terrProb || (!(cad.real && cad.real.id) && !!nameProblem(cad))} onClick=${()=>sendRequest(cad.real && cad.real.status==="active" ? "update" : "activate", typed)}><${I} n="send"/>Enviar solicitud</button>`
+          : html`<button className="btn primary" disabled=${!realChk || realChk.loading || realChk.blocked || !realChk.audOk || !!terrProb || typed.trim().toUpperCase()!=="ACTIVAR" || (!(cad.real && cad.real.id) && !!nameProblem(cad))} onClick=${goReal}><${I} n="send"/>Enviar de verdad</button>`}
       </div>`
     : act==="ask" ? html`
       <div className="sim-ic"><${I} n="zap"/></div>
@@ -3225,6 +3252,14 @@ function Wizard({initial, isNew, startAt, env, onBack, onSave: onSaveRaw, onActi
   ${shareLink && html`<${ShareLinkModal} link=${shareLink} onClose=${()=>setShareLink(null)}/>`}
   ${addOpen && html`<${AddPeople} cad=${cad} onSave=${async n=>{ const ok = await onSave(n); if (ok!==false){ setCad(c=>({...c, ...n})); setDirty(false); } return ok; }} onClose=${()=>setAddOpen(false)}/>`}
   ${testOpen && html`<${TestSendModal} cad=${cad} sample=${sample} rows=${live.state==="done" && live.key===liveKey ? live.rows : []} loadRows=${runLive} onClose=${()=>setTestOpen(false)}/>`}
+  ${review && html`<div className="modal-bg" onClick=${()=>setReview(null)}><div className="card modal" style=${{maxWidth:540}} onClick=${e=>e.stopPropagation()} role="dialog" aria-label="Revisa a quién se enviará">
+    <h3 style=${{fontSize:19,marginBottom:4}}>Revisa a quién se enviará</h3>
+    <p className="muted" style=${{marginTop:0,fontSize:13.5}}>Cambiaste a quién le llega esta cadencia. Confirma que es correcto antes de guardar.</p>
+    <${AudienceReview} cad=${cad} rows=${live.state==="done" && live.key===liveKey ? live.rows.filter(d=>simulate(cad,d).kind==="in") : null} n=${live.state==="done" && live.key===liveKey ? live.rows.filter(d=>simulate(cad,d).kind==="in").length : null}/>
+    <div className="row" style=${{justifyContent:"flex-end",marginTop:18,gap:8}}>
+      <button className="btn ghost" onClick=${()=>{ setReview(null); setW(0); }}>Corregir filtros</button>
+      <button className="btn blue" onClick=${()=>{ const l = review.leave; setReview(null); save(l, true); }}><${I} n="check"/>Está bien, guardar</button>
+    </div></div></div>`}
   ${nameAsk && html`<div className="modal-bg" onClick=${cancelName}><div className="card modal" onClick=${e=>e.stopPropagation()} role="dialog" aria-label="Nombre de la cadencia">
     <h3 style=${{fontSize:18,marginBottom:8}}>Ponle nombre a la cadencia</h3>
     <p className="muted" style=${{marginTop:0}}>No se puede guardar como «Nueva cadencia». Escribe a quién va y para qué, así se reconoce en la lista.</p>
