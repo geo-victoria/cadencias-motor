@@ -134,6 +134,9 @@ async function tagFirstSend(conn: Conn, cad: any, e: any, module: string) {
   const main: any = { id: String(e.deal_id) };
   if (CADF[module]) main[CADF[module]] = label;
   if (module === "Leads" && creator) main.Owner = { id: creator };
+  // Prospección: al salir el primer correo, el prospecto pasa a «2. Intento de contacto»
+  const pst = cad.spec?.settings ?? {};
+  if (module === "Leads" && pst.prospect && pst.leadFlow !== false) { main.Lead_Status = "2. Intento de contacto"; main.Fecha_Hora_Intento_de_Contacto = isoNow(); }
   try { if (Object.keys(main).length > 1) await zoho(conn, `/${module}`, { method: "PUT", body: JSON.stringify({ data: [main], trigger: [] }) }); } catch { /* sigue */ }
   if (module === "Deals" && rec.contactId) {
     const ct: any = { id: String(rec.contactId) };
@@ -260,9 +263,9 @@ const STAGE_DATE: Record<string, Record<string, string>> = {
   Contacts: {},
 };
 const SELECT: Record<string, string[]> = {
-  Deals: ["Deal_Name", "Account_Name", "Contact_Name", "Contact_Email", "Owner", "Stage"],
-  Leads: ["First_Name", "Last_Name", "Full_Name", "Company", "Email", "Owner", "Lead_Status"],
-  Contacts: ["First_Name", "Last_Name", "Full_Name", "Account_Name", "Email", "Owner", "Contact_Status"],
+  Deals: ["Deal_Name", "Account_Name", "Contact_Name", "Contact_Email", "Owner", "Stage", "Contact_Phone"],
+  Leads: ["First_Name", "Last_Name", "Full_Name", "Company", "Email", "Owner", "Lead_Status", "Phone", "Mobile"],
+  Contacts: ["First_Name", "Last_Name", "Full_Name", "Account_Name", "Email", "Owner", "Contact_Status", "Phone", "Mobile"],
 };
 const selectOf = (module: string) => [...SELECT[module], ...(ZCAD[module] ? [ZCAD[module]] : []), ...(CADF[module] ? [CADF[module]] : [])];
 const ENROLLED = "__enrolled";
@@ -370,16 +373,16 @@ function normRecord(module: string, r: any): any {
   const pc = CADF[module] ? (r[CADF[module]] ?? null) : null;
   if (module === "Leads") {
     return { id: String(r.id), name: r.Full_Name ?? null, first: r.First_Name ?? "", last: r.Last_Name ?? "", contact: r.Full_Name ?? null, email: r.Email ?? null,
-      account: r.Company ?? null, accountId: null, owner: own.name ?? null, ownerEmail: own.email ?? null, stage: r.Lead_Status ?? null, zcad: zc, pcad: pc };
+      account: r.Company ?? null, accountId: null, owner: own.name ?? null, ownerEmail: own.email ?? null, stage: r.Lead_Status ?? null, phone: r.Mobile || r.Phone || null, zcad: zc, pcad: pc };
   }
   if (module === "Contacts") {
     return { id: String(r.id), name: r.Full_Name ?? null, first: r.First_Name ?? "", last: r.Last_Name ?? "", contact: r.Full_Name ?? null, email: r.Email ?? null,
-      account: r.Account_Name?.name ?? null, accountId: r.Account_Name?.id ?? null, owner: own.name ?? null, ownerEmail: own.email ?? null, stage: r.Contact_Status ?? null, zcad: zc, pcad: pc };
+      account: r.Account_Name?.name ?? null, accountId: r.Account_Name?.id ?? null, owner: own.name ?? null, ownerEmail: own.email ?? null, stage: r.Contact_Status ?? null, phone: r.Mobile || r.Phone || null, zcad: zc, pcad: pc };
   }
   const name = r.Deal_Name ?? null;
   return { id: String(r.id), name, first: "", last: "", contact: r.Contact_Name?.name ?? null, contactId: r.Contact_Name?.id ?? null, email: r.Contact_Email ?? null,
     account: r.Account_Name?.name ?? (name ? String(name).split(" - ")[0].trim() : null), accountId: r.Account_Name?.id ?? null,
-    owner: own.name ?? null, ownerEmail: own.email ?? null, stage: r.Stage ?? null, zcad: zc, pcad: pc };
+    owner: own.name ?? null, ownerEmail: own.email ?? null, stage: r.Stage ?? null, phone: r.Contact_Phone || null, zcad: zc, pcad: pc };
 }
 
 async function enrichRecords(c: Conn, module: string, recs: any[]) {
@@ -1338,6 +1341,27 @@ async function runSpecCadence(cad: any, conns: Conn[], stats: any, opts: { ignor
       stats.errors = (stats.errors ?? 0) + 1;
     }
   }
+  if (settings.prospect && settings.leadFlow !== false && module === "Leads" && !cad.test_email) await closeProspects(queryConn, cad, settings, stats);
+}
+
+// Prospección: unos días después del último correo, si nadie respondió y el prospecto sigue en
+// «1. No contactado» o «2. Intento de contacto», pasa a «No Calificado» (motivo «No contesto nunca»).
+// Si el SDR ya lo movió (contactado, calificado, etc.), no se toca.
+async function closeProspects(conn: Conn, cad: any, settings: any, stats: any) {
+  const days = Math.max(0, Number(settings.leadCloseDays ?? 3));
+  const before = new Date(Date.now() - days * DAY).toISOString();
+  const { data: rows } = await db.from("enrollments").select("id, deal_id").eq("cadence_id", cad.id).eq("status", "completed")
+    .is("lead_closed_at", null).lt("updated_at", before).limit(100);
+  const list = (rows ?? []).filter((r: any) => /^\d+$/.test(String(r.deal_id)));
+  if (!list.length) return;
+  try {
+    const j = await zoho(conn, `/Leads?ids=${list.map((r: any) => r.deal_id).join(",")}&fields=Lead_Status`);
+    const open = new Set((j.data ?? []).filter((x: any) => /no contactado|intento de contacto|junk lead|attempted to contact/i.test(String(x.Lead_Status ?? ""))).map((x: any) => String(x.id)));
+    const upd = list.filter((r: any) => open.has(String(r.deal_id))).map((r: any) => ({ id: String(r.deal_id), Lead_Status: "No Calificado", Motivo_No_calificado: "No contesto nunca", Fecha_Hora_No_Calificado: isoNow() }));
+    if (upd.length) await zoho(conn, `/Leads`, { method: "PUT", body: JSON.stringify({ data: upd, trigger: [] }) });
+    await db.from("enrollments").update({ lead_closed_at: new Date().toISOString() }).in("id", list.map((r: any) => r.id));
+    stats.leads_closed = (stats.leads_closed ?? 0) + upd.length;
+  } catch (err) { stats.leads_close_error = (err as Error).message.slice(0, 160); }
 }
 
 // ======================================================================= Formato anterior (sin spec)

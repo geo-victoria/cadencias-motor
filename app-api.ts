@@ -22,6 +22,8 @@ const FN_READ = /^select public\.(contact_lookup|overlap_alerts|cadence_history)
 const FN_OWNER = /^select public\.(sync_cadence|run_cadence_now|request_exec_sync)\(/;
 // panel de control (solo administradores): un texto JSON entre comillas
 const FN_CTRL = /^select public\.control_stats\('(?:[^']|'')*'\) as r;?$/;
+// siguientes pasos (quién abrió y no respondió): administradores y lectores ven todo; el resto, solo lo suyo
+const FN_NEXT = /^select public\.next_steps\('((?:[^']|'')*)'\) as r;?$/;
 
 async function cfgList(key: string): Promise<string[]> {
   const { data } = await db.from("app_config").select("value").eq("key", key).maybeSingle();
@@ -155,8 +157,18 @@ async function shareView(token: string) {
   return { cad, n, truncated, live };
 }
 
-async function sql(q: string, isOwner: boolean) {
-  const t = String(q ?? "").trim();
+async function sql(q: string, isOwner: boolean, email = "", isViewer = false) {
+  let t = String(q ?? "").trim();
+  const nx = t.match(FN_NEXT);
+  if (nx) {
+    let p: any = {}; try { p = JSON.parse(nx[1].replace(/''/g, "'")); } catch { p = {}; }
+    if (!isOwner && !isViewer) p.who = email;
+    const lit = JSON.stringify({ days: Number(p.days) || 14, who: String(p.who ?? ""), cad: /^[0-9a-f-]{36}$/i.test(String(p.cad ?? "")) ? p.cad : "" }).replace(/'/g, "''");
+    t = `select public.next_steps('${lit}') as r;`;
+    const { data, error } = await db.rpc("app_exec", { q: t });
+    if (error) throw new E("engine", error.message, 500);
+    return { result: "<x>\n" + JSON.stringify(data ?? []) + "\n</x>" };
+  }
   if (!(FIXED.has(t) || FN_ANY.test(t) || FN_READ.test(t) || (FN_OWNER.test(t) && isOwner) || (FN_CTRL.test(t) && isOwner))) {
     if (FN_CTRL.test(t)) throw new E("permission_denied", "El panel de control es solo para quienes administran la herramienta.", 403);
     if (FN_OWNER.test(t)) throw new E("permission_denied", "Solo quien administra la herramienta puede activar o pausar envíos.", 403);
@@ -201,7 +213,10 @@ Deno.serve(async (req) => {
       }
       case "mcp": {
         if (body.server === "Zoho CRM") return json({ payload: await zohoTool(String(body.tool), body.args) });
-        if (body.server === "Supabase" && body.tool === "execute_sql") return json({ payload: await sql(body.args?.query, isOwner) });
+        if (body.server === "Supabase" && body.tool === "execute_sql") {
+          const isViewer = !isOwner && /next_steps/.test(String(body.args?.query ?? "")) && (await cfgList("viewer_emails")).includes(email);
+          return json({ payload: await sql(body.args?.query, isOwner, email, isViewer) });
+        }
         throw new E("server_not_connected", `Conexión no disponible: ${body.server}`, 400);
       }
       case "ai": return json(await ai(body.messages));
